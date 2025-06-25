@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Manage Products</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts - Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome for Trash Icon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* Light gray background */
+        }
+        .success-message, .error-message {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+            z-index: 1001;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            font-weight: 500;
+        }
+        .success-message.show {
+            background-color: #4CAF50; /* Green */
+            color: white;
+            opacity: 1;
+            visibility: visible;
+        }
+        .error-message.show {
+            background-color: #EF4444; /* Red */
+            color: white;
+            opacity: 1;
+            visibility: visible;
+        }
+        .admin-section {
+            display: none; /* Hidden by default, shown after login */
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-md py-4">
+        <div class="container mx-auto px-4 flex justify-between items-center flex-wrap">
+            <a href="index.html" class="text-3xl font-bold text-gray-800 rounded-lg p-2 hover:bg-gray-100 transition duration-300 mb-2 md:mb-0">SMART PRODUCTS - Admin</a>
+            <nav class="w-full md:w-auto">
+                <ul class="flex justify-center md:justify-end space-x-4 sm:space-x-6 flex-wrap">
+                    <li><a href="index.html" class="text-gray-700 hover:text-blue-600 font-medium transition duration-300 rounded-lg p-2 hover:bg-blue-50">View Shop</a></li>
+                    <li id="adminLogoutLink" class="hidden"><a href="#" onclick="handleAdminLogout()" class="text-gray-700 hover:text-red-600 font-medium transition duration-300 rounded-lg p-2 hover:bg-red-50">Admin Logout</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8 flex-grow">
+        <h1 class="text-3xl font-bold text-gray-800 mb-8 text-center">Admin Panel</h1>
+
+        <!-- Admin Login Section -->
+        <div id="adminLoginSection" class="max-w-md mx-auto bg-white p-8 rounded-xl shadow-lg mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4 text-center">Admin Login</h2>
+            <form id="adminLoginForm" class="space-y-4">
+                <div>
+                    <label for="adminUsername" class="block text-sm font-medium text-gray-700">Username</label>
+                    <input type="text" id="adminUsername" name="adminUsername" required
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                </div>
+                <div>
+                    <label for="adminPassword" class="block text-sm font-medium text-gray-700">Password</label>
+                    <input type="password" id="adminPassword" name="adminPassword" required
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                </div>
+                <button type="submit"
+                        class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-300">
+                    Login
+                </button>
+                <p id="loginErrorMessage" class="error-message text-center hidden mt-2"></p>
+            </form>
+        </div>
+
+        <!-- Product Management Section (Hidden until logged in) -->
+        <div id="productManagementSection" class="admin-section">
+            <div class="max-w-2xl mx-auto bg-white p-8 rounded-xl shadow-lg mb-8">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Add New Product</h2>
+                <form id="addProductForm" class="space-y-6">
+                    <div>
+                        <label for="productName" class="block text-sm font-medium text-gray-700">Product Name</label>
+                        <input type="text" id="productName" name="productName" required
+                               class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    </div>
+                    <div>
+                        <label for="productDescription" class="block text-sm font-medium text-gray-700">Description</label>
+                        <textarea id="productDescription" name="productDescription" rows="5" required
+                                  class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
+                    </div>
+                    <div>
+                        <label for="productPrice" class="block text-sm font-medium text-gray-700">Price (KSh)</label>
+                        <input type="number" id="productPrice" name="productPrice" min="0" step="1" required
+                               class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    </div>
+                    <div>
+                        <label for="productImages" class="block text-sm font-medium text-gray-700">Upload Images</label>
+                        <input type="file" id="productImages" name="productImages" accept="image/*" multiple required
+                               class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                        <p class="mt-1 text-xs text-gray-500">Select one or more image files (e.g., .jpg, .png).</p>
+                    </div>
+                    <button type="submit"
+                            class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-300">
+                        Add Product
+                    </button>
+                </form>
+            </div>
+
+            <div class="max-w-2xl mx-auto bg-white p-8 rounded-xl shadow-lg">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Existing Products</h2>
+                <div id="existingProductsList" class="space-y-4">
+                    <p id="no-products-message" class="text-gray-500 text-center hidden">No products added yet.</p>
+                    <!-- Products will be dynamically loaded here -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Success/Error Message -->
+    <div id="statusMessage" class="success-message"></div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8 mt-auto rounded-t-xl shadow-inner">
+        <div class="container mx-auto px-4 text-center">
+            <p>&copy; 2025 MyFunShop. Admin Panel.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Admin Credentials (HARDCODED - NOT SECURE FOR PRODUCTION)
+        const ADMIN_USERNAME = 'admin';
+        const ADMIN_PASSWORD = '1234'; // Changed password as requested!
+
+        // DOM elements
+        const statusMessage = document.getElementById('statusMessage');
+        const existingProductsList = document.getElementById('existingProductsList');
+        const noProductsMessage = document.getElementById('no-products-message');
+        const adminLoginSection = document.getElementById('adminLoginSection');
+        const productManagementSection = document.getElementById('productManagementSection');
+        const adminLoginForm = document.getElementById('adminLoginForm');
+        const adminUsernameInput = document.getElementById('adminUsername');
+        const adminPasswordInput = document.getElementById('adminPassword');
+        const loginErrorMessage = document.getElementById('loginErrorMessage');
+        const adminLogoutLink = document.getElementById('adminLogoutLink');
+
+        // Function to display status messages (success/error)
+        function showStatusMessage(message, type = 'success') {
+            statusMessage.innerText = message;
+            statusMessage.classList.remove('success-message', 'error-message');
+            statusMessage.classList.add(`${type}-message`);
+            statusMessage.classList.add('show');
+            setTimeout(() => {
+                statusMessage.classList.remove('show');
+            }, 3000); // Message disappears after 3 seconds
+        }
+
+        /**
+         * Reads a File object and converts it to a Base64 string.
+         * @param {File} file - The file to convert.
+         * @returns {Promise<string>} A promise that resolves with the Base64 string.
+         */
+        function readFileAsBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+                reader.readAsDataURL(file);
+            });
+        }
+
+        /**
+         * Loads products from localStorage and renders them.
+         */
+        function loadAndRenderProducts() {
+            const products = JSON.parse(localStorage.getItem('products')) || [];
+            existingProductsList.innerHTML = ''; // Clear existing list
+
+            if (products.length === 0) {
+                noProductsMessage.classList.remove('hidden');
+                return;
+            } else {
+                noProductsMessage.classList.add('hidden');
+            }
+
+            products.forEach(product => {
+                const productDiv = document.createElement('div');
+                productDiv.id = `product-${product.id}`; // Add ID for easy removal
+                productDiv.classList.add('flex', 'items-center', 'justify-between', 'p-4', 'bg-gray-50', 'rounded-lg', 'shadow-sm');
+
+                const firstImage = (product.images && product.images.length > 0) ?
+                                   product.images[0] :
+                                   'https://placehold.co/50x50/cccccc/000000?text=No+Image';
+
+                productDiv.innerHTML = `
+                    <div class="flex items-center space-x-4">
+                        <img src="${firstImage}" alt="${product.name}" class="w-12 h-12 object-cover rounded-md" onerror="this.onerror=null;this.src='https://placehold.co/50x50/cccccc/000000?text=Error';">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-800">${product.name}</h3>
+                            <p class="text-gray-600 text-sm">KSh ${product.price.toLocaleString()}</p>
+                        </div>
+                    </div>
+                    <button data-product-id="${product.id}" class="delete-product-btn text-red-500 hover:text-red-700 transition duration-300">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                `;
+                existingProductsList.appendChild(productDiv);
+            });
+
+            // Attach event listeners to new delete buttons
+            document.querySelectorAll('.delete-product-btn').forEach(button => {
+                button.addEventListener('click', (event) => {
+                    const productIdToDelete = event.currentTarget.dataset.productId;
+                    deleteProduct(productIdToDelete);
+                });
+            });
+        }
+
+        /**
+         * Deletes a product from localStorage.
+         * @param {string} productIdToDelete - The ID of the product to delete.
+         */
+        function deleteProduct(productIdToDelete) {
+            let products = JSON.parse(localStorage.getItem('products')) || [];
+            const initialLength = products.length;
+            products = products.filter(product => product.id !== productIdToDelete);
+
+            if (products.length < initialLength) {
+                localStorage.setItem('products', JSON.stringify(products));
+                showStatusMessage('Product deleted successfully!', 'success');
+                loadAndRenderProducts(); // Re-render the list
+            } else {
+                showStatusMessage('Product not found.', 'error');
+            }
+        }
+
+        // Handle form submission for adding products
+        document.getElementById('addProductForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const productName = document.getElementById('productName').value;
+            const productDescription = document.getElementById('productDescription').value;
+            const productPrice = parseFloat(document.getElementById('productPrice').value);
+            const productImagesInput = document.getElementById('productImages');
+            const files = productImagesInput.files;
+
+            // Basic validation
+            if (!productName || !productDescription || isNaN(productPrice) || productPrice < 0 || files.length === 0) {
+                showStatusMessage('Please fill in all fields and upload at least one image.', 'error');
+                return;
+            }
+
+            try {
+                const base64Images = [];
+                for (let i = 0; i < files.length; i++) {
+                    const base64 = await readFileAsBase64(files[i]);
+                    base64Images.push(base64);
+                }
+
+                let products = JSON.parse(localStorage.getItem('products')) || [];
+
+                // Create a unique ID for the new product
+                const newProductId = `prod_${Date.now()}`;
+
+                // Add the new product
+                const newProduct = {
+                    id: newProductId,
+                    name: productName,
+                    description: productDescription,
+                    price: productPrice,
+                    images: base64Images,
+                    createdAt: new Date().toISOString() // Store timestamp as ISO string
+                };
+
+                products.push(newProduct);
+
+                // Save the updated products array back to localStorage
+                localStorage.setItem('products', JSON.stringify(products));
+
+                showStatusMessage('Product added successfully!', 'success');
+                document.getElementById('addProductForm').reset(); // Clear form
+                loadAndRenderProducts(); // Re-render the list after adding
+            } catch (error) {
+                console.error("Error adding product: ", error);
+                showStatusMessage(`Error adding product: ${error.message}`, 'error');
+            }
+        });
+
+        /**
+         * Handles the admin login process.
+         */
+        adminLoginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            loginErrorMessage.classList.add('hidden'); // Hide previous errors
+
+            const username = adminUsernameInput.value;
+            const password = adminPasswordInput.value;
+
+            if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+                sessionStorage.setItem('adminLoggedIn', 'true'); // Store login state
+                showAdminContent();
+                showStatusMessage('Admin login successful!', 'success');
+            } else {
+                loginErrorMessage.textContent = 'Invalid username or password.';
+                loginErrorMessage.classList.remove('hidden');
+                showStatusMessage('Invalid login credentials.', 'error');
+            }
+        });
+
+        /**
+         * Handles admin logout.
+         */
+        window.handleAdminLogout = function() {
+            sessionStorage.removeItem('adminLoggedIn'); // Remove login state
+            hideAdminContent();
+            showStatusMessage('Admin logged out successfully!', 'success');
+            adminLoginForm.reset(); // Clear login form fields
+        }
+
+        /**
+         * Shows the product management section and hides the login form.
+         */
+        function showAdminContent() {
+            adminLoginSection.classList.add('hidden');
+            productManagementSection.classList.remove('admin-section'); // Remove display:none
+            adminLogoutLink.classList.remove('hidden'); // Show logout link
+            loadAndRenderProducts(); // Load products once admin is logged in
+        }
+
+        /**
+         * Hides the product management section and shows the login form.
+         */
+        function hideAdminContent() {
+            adminLoginSection.classList.remove('hidden');
+            productManagementSection.classList.add('admin-section'); // Add display:none
+            adminLogoutLink.classList.add('hidden'); // Hide logout link
+        }
+
+        // Initial check on page load to see if admin is already logged in
+        document.addEventListener('DOMContentLoaded', () => {
+            if (sessionStorage.getItem('adminLoggedIn') === 'true') {
+                showAdminContent();
+            } else {
+                hideAdminContent();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Shop - Sports & Fun</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts - Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome for Heart Icon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* Light gray background */
+        }
+        /* Modal styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            max-width: 90%; /* Max width for responsiveness */
+            max-height: 90%; /* Max height for responsiveness */
+            overflow-y: auto; /* Scroll if content exceeds height */
+            position: relative;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            transform: translateY(-20px);
+            transition: transform 0.3s ease;
+        }
+        .modal-overlay.show .modal-content {
+            transform: translateY(0);
+        }
+        .modal-close-button {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #4B5563; /* gray-600 */
+            transition: color 0.2s ease;
+        }
+        .modal-close-button:hover {
+            color: #1F2937; /* gray-800 */
+        }
+        /* Success message styles */
+        .success-message {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #4CAF50; /* Green */
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+            z-index: 1001;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            font-weight: 500;
+        }
+        .success-message.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        /* Wishlist icon styling */
+        .wishlist-icon {
+            position: absolute;
+            top: 0.75rem;
+            right: 0.75rem;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #EF4444; /* Red-500 */
+            transition: transform 0.2s ease;
+            z-index: 5;
+        }
+        .wishlist-icon:hover {
+            transform: scale(1.1);
+        }
+        .wishlist-icon.far { /* empty heart */
+            color: #D1D5DB; /* Gray-300 */
+        }
+        /* Slideshow navigation arrows */
+        .slideshow-nav-button {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            font-size: 1.5rem;
+            border-radius: 0.5rem;
+            transition: background-color 0.2s ease;
+            z-index: 10; /* Ensure buttons are above image */
+        }
+        .slideshow-nav-button:hover {
+            background-color: rgba(0, 0, 0, 0.8);
+        }
+        .slideshow-nav-button.left {
+            left: 1rem;
+        }
+        .slideshow-nav-button.right {
+            right: 1rem;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-md py-4">
+        <div class="container mx-auto px-4 flex justify-between items-center flex-wrap">
+            <!-- Logo/Site Title -->
+            <a href="#" class="text-3xl font-bold text-gray-800 rounded-lg p-2 hover:bg-gray-100 transition duration-300 mb-2 md:mb-0">SMART PRODUCTS</a>
+
+            <!-- Navigation -->
+            <nav class="w-full md:w-auto">
+                <ul class="flex justify-center md:justify-end space-x-4 sm:space-x-6 flex-wrap">
+                    <li><a href="account.html" class="text-gray-700 hover:text-blue-600 font-medium transition duration-300 rounded-lg p-2 hover:bg-blue-50">Myaccount</a></li>
+                    <li><a href="#" class="text-gray-700 hover:text-blue-600 font-medium transition duration-300 rounded-lg p-2 hover:bg-blue-50">Products</a></li>
+                    <li><a href="order.html " class="text-gray-700 hover:text-blue-600 font-medium transition duration-300 rounded-lg p-2 hover:bg-blue-50">Orders</a></li>
+                    <li><a href="wishlist.html" class="text-gray-700 hover:text-red-600 font-medium transition duration-300 rounded-lg p-2 hover:bg-red-50">Wishlist (<span id="wishlist-count">0</span>)</a></li>
+                    <li><a href="cart.html" class="text-gray-700 hover:text-blue-600 font-medium transition duration-300 rounded-lg p-2 hover:bg-blue-50">Cart (<span id="cart-count">0</span>)</a></li>
+                    <!-- New "Sell" link added here -->
+                    <li><a href="admin.html" class="text-gray-700 hover:text-blue-600 font-medium transition duration-300 rounded-lg p-2 hover:bg-blue-50">Sell</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8 flex-grow">
+        <!-- Hero Section -->
+        <section class="bg-gradient-to-r from-teal-500 to-green-600 text-white rounded-xl p-6 sm:p-10 mb-10 text-center shadow-lg">
+            <h1 class="text-3xl sm:text-4xl md:text-5xl font-extrabold mb-4 animate-fade-in-down">Unleash the Fun!</h1>
+            <p class="text-base sm:text-lg md:text-xl mb-6 opacity-90 animate-fade-in-up">Explore our exciting range of outdoor and recreational products.</p>
+            <button class="bg-white text-teal-700 font-semibold py-2 px-6 sm:py-3 sm:px-8 rounded-full shadow-lg hover:bg-gray-100 transform hover:scale-105 transition duration-300">Shop Now</button>
+        </section>
+
+        <!-- Product Grid Section -->
+        <section class="mb-10">
+            <h2 class="text-3xl sm:text-4xl font-bold text-gray-800 mb-8 text-center">Featured Products</h2>
+            <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-8">
+                <!-- Products will be loaded here dynamically from localStorage -->
+                <div id="loading-products" class="col-span-full text-center text-gray-500">Loading products...</div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Product Details Modal -->
+    <div id="productDetailsModal" class="modal-overlay">
+        <div class="modal-content w-11/12 sm:w-3/4 lg:w-1/2">
+            <button class="modal-close-button" onclick="hideProductDetails()">&times;</button>
+            <div class="relative w-full h-48 sm:h-64 mb-4 rounded-lg overflow-hidden">
+                <img id="modalProductImage" src="" alt="Product Image" class="w-full h-full object-cover">
+                <button class="slideshow-nav-button left" onclick="showPrevImage()">&lt;</button>
+                <button class="slideshow-nav-button right" onclick="showNextImage()">&gt;</button>
+            </div>
+            <h2 id="modalProductTitle" class="text-2xl sm:text-3xl font-bold text-gray-800 mb-2"></h2>
+            <p id="modalProductDescription" class="text-gray-700 text-base sm:text-lg mb-4 whitespace-pre-line"></p>
+            <span id="modalProductPrice" class="text-2xl sm:text-3xl font-bold text-blue-600"></span>
+            <button class="bg-blue-600 text-white py-2 px-4 sm:py-3 sm:px-6 rounded-full hover:bg-blue-700 transition duration-300 mt-6"
+                    onclick="addToCartFromModal()">Add to Cart</button>
+        </div>
+    </div>
+
+    <!-- Success Message -->
+    <div id="successMessage" class="success-message">
+        Successfully added to cart!
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8 mt-auto rounded-t-xl shadow-inner">
+        <div class="container mx-auto px-4 text-center">
+        <p>&copy; 2025 MyFunShop. All rights reserved.</p>
+            <div class="flex justify-center space-x-4 sm:space-x-6 mt-4 flex-wrap">
+                <a href="#" class="text-gray-400 hover:text-white transition duration-300 rounded-lg p-2 hover:bg-gray-700">Privacy Policy</a>
+                <a href="#" class="text-gray-400 hover:text-white transition duration-300 rounded-lg p-2 hover:bg-gray-700">Terms of Service</a>
+                <a href="#" class="text-gray-400 hover:text-white transition duration-300 rounded-lg p-2 hover:bg-gray-700">FAQ</a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Global variables for products and UI elements
+        let products = []; // To store products fetched from localStorage
+        let cart = JSON.parse(localStorage.getItem('shoppingCart')) || [];
+        let wishlist = JSON.parse(localStorage.getItem('wishlist')) || [];
+
+        const cartCountSpan = document.getElementById('cart-count');
+        const wishlistCountSpan = document.getElementById('wishlist-count');
+        const successMessage = document.getElementById('successMessage');
+        const modalProductImageElement = document.getElementById('modalProductImage');
+        const productGrid = document.getElementById('product-grid');
+        const loadingProducts = document.getElementById('loading-products');
+
+        let currentProduct = {};
+        let modalProductImages = [];
+        let currentImageIndex = 0;
+
+        // Function to save the current cart to localStorage
+        function saveCart() {
+            localStorage.setItem('shoppingCart', JSON.stringify(cart));
+        }
+
+        // Function to save the current wishlist to localStorage
+        function saveWishlist() {
+            localStorage.setItem('wishlist', JSON.stringify(wishlist));
+        }
+
+        // Function to update the cart item count in the navigation bar.
+        function updateCartCount() {
+            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+            cartCountSpan.textContent = totalItems;
+        }
+
+        // Function to update the wishlist item count in the navigation bar and icon states.
+        function updateWishlistCount() {
+            wishlistCountSpan.textContent = wishlist.length;
+
+            // Update heart icon states for dynamically loaded products
+            document.querySelectorAll('.wishlist-icon').forEach(icon => {
+                // Get the product name from a data attribute or by traversing DOM
+                const productName = icon.dataset.productName;
+                const isInWishlist = wishlist.some(item => item.name === productName);
+                if (isInWishlist) {
+                    icon.classList.remove('far'); // empty heart
+                    icon.classList.add('fa-solid'); // filled heart
+                } else {
+                    icon.classList.remove('fa-solid'); // filled heart
+                    icon.classList.add('far'); // empty heart
+                }
+            });
+        }
+
+        // Function to show product details in a modal
+        window.showProductDetails = function(productId) { // Made global for onclick in dynamically added HTML
+            const product = products.find(p => p.id === productId);
+            if (!product) {
+                console.error("Product not found for ID:", productId);
+                return;
+            }
+
+            const modal = document.getElementById('productDetailsModal');
+            document.getElementById('modalProductTitle').innerText = product.name;
+            document.getElementById('modalProductDescription').innerText = product.description;
+            document.getElementById('modalProductPrice').innerText = `KSh ${product.price.toLocaleString()}`;
+
+            modalProductImages = product.images || [];
+            currentImageIndex = 0; // Reset to first image when opening modal
+
+            if (modalProductImages.length > 0) {
+                modalProductImageElement.src = modalProductImages[currentImageIndex];
+                modalProductImageElement.onerror = () => {
+                    modalProductImageElement.src = 'https://placehold.co/600x400/cccccc/000000?text=Image+Error';
+                };
+                document.querySelector('.slideshow-nav-button.left').style.display = modalProductImages.length > 1 ? 'block' : 'none';
+                document.querySelector('.slideshow-nav-button.right').style.display = modalProductImages.length > 1 ? 'block' : 'none';
+            } else {
+                modalProductImageElement.src = 'https://placehold.co/600x400/cccccc/000000?text=No+Image'; // Placeholder if no image
+                document.querySelector('.slideshow-nav-button.left').style.display = 'none';
+                document.querySelector('.slideshow-nav-button.right').style.display = 'none';
+            }
+
+            modal.classList.add('show');
+
+            // Store current product details for "Add to Cart" from modal
+            currentProduct = {
+                name: product.name,
+                price: product.price,
+                image: modalProductImages.length > 0 ? modalProductImages[0] : 'https://placehold.co/600x400/cccccc/000000?text=No+Image'
+            };
+        }
+
+        // Function to hide the product details modal
+        window.hideProductDetails = function() { // Made global
+            const modal = document.getElementById('productDetailsModal');
+            modal.classList.remove('show');
+        }
+
+        // Close modal when clicking outside of it
+        document.getElementById('productDetailsModal').addEventListener('click', function(event) {
+            if (event.target === this) {
+                hideProductDetails();
+            }
+        });
+
+        // Function to show success message
+        function showSuccessMessage(message) {
+            successMessage.innerText = message;
+            successMessage.classList.add('show');
+            setTimeout(() => {
+                successMessage.classList.remove('show');
+            }, 3000); // Message disappears after 3 seconds
+        }
+
+        /**
+         * Shows the next image in the slideshow.
+         */
+        window.showNextImage = function() { // Made global
+            if (modalProductImages.length > 0) {
+                currentImageIndex = (currentImageIndex + 1) % modalProductImages.length;
+                modalProductImageElement.src = modalProductImages[currentImageIndex];
+            }
+        }
+
+        /**
+         * Shows the previous image in the slideshow.
+         */
+        window.showPrevImage = function() { // Made global
+            if (modalProductImages.length > 0) {
+                currentImageIndex = (currentImageIndex - 1 + modalProductImages.length) % modalProductImages.length;
+                modalProductImageElement.src = modalProductImages[currentImageIndex];
+            }
+        }
+
+        /**
+         * Adds an item to the cart.
+         * @param {object} product - The product object { name, price, image }.
+         * @param {number} [quantityToAdd=1] - The number of units to add (optional, defaults to 1).
+         */
+        window.addToCart = function(product, quantityToAdd = 1) { // Made global
+            const existingItemIndex = cart.findIndex(item => item.name === product.name);
+
+            if (existingItemIndex > -1) {
+                // If item exists, increment quantity by quantityToAdd
+                cart[existingItemIndex].quantity += quantityToAdd;
+            } else {
+                // If item does not exist, add new item with specified quantity
+                cart.push({ ...product, quantity: quantityToAdd, id: Date.now() }); // Add a unique ID for easier removal if needed
+            }
+
+            saveCart(); // Save the updated cart to localStorage
+            updateCartCount(); // Update the count in the header
+            showSuccessMessage(`"${quantityToAdd > 1 ? quantityToAdd + ' x ' : ''}${product.name}" successfully added to cart!`);
+            console.log("Current Cart:", cart); // Log current cart for debugging
+        }
+
+        // Function to add item to cart from the modal
+        window.addToCartFromModal = function() { // Made global
+            if (currentProduct.name && currentProduct.price) { // image might be a placeholder
+                addToCart(currentProduct, 1); // Add 1 unit from modal
+                hideProductDetails(); // Optionally close modal after adding to cart
+            }
+        }
+
+        /**
+         * Toggles a product in the wishlist.
+         * @param {object} product - The product object { name, price, image }.
+         * @param {HTMLElement} iconElement - The heart icon element that was clicked.
+         */
+        window.toggleWishlist = function(product, iconElement) { // Made global
+            const existingItemIndex = wishlist.findIndex(item => item.name === product.name);
+
+            if (existingItemIndex > -1) {
+                // If item exists, remove it
+                wishlist.splice(existingItemIndex, 1);
+                showSuccessMessage(`"${product.name}" removed from wishlist!`);
+                iconElement.classList.remove('fa-solid'); // filled heart
+                iconElement.classList.add('far'); // empty heart
+            } else {
+                // If item does not exist, add it
+                wishlist.push({ ...product, id: Date.now() }); // Add a unique ID
+                showSuccessMessage(`"${product.name}" added to wishlist!`);
+                iconElement.classList.remove('far'); // empty heart
+                iconElement.classList.add('fa-solid'); // filled heart
+            }
+
+            saveWishlist(); // Save the updated wishlist to localStorage
+            updateWishlistCount(); // Update the count in the header
+            console.log("Current Wishlist:", wishlist);
+        }
+
+        // Function to render products dynamically
+        function renderProducts(productsToRender) {
+            productGrid.innerHTML = ''; // Clear existing products
+            if (productsToRender.length === 0) {
+                productGrid.innerHTML = '<p class="col-span-full text-center text-gray-500">No products found. Please add some from the admin page.</p>';
+                loadingProducts.style.display = 'none'; // Hide loading indicator
+                return;
+            }
+
+            // Sort products by creation date (newest first)
+            productsToRender.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+            productsToRender.forEach(product => {
+                // Determine the image source. If it's Base64, it will start with 'data:image/'.
+                // Otherwise, assume it's a URL. Add a fallback for broken images.
+                const firstImage = (product.images && product.images.length > 0) ?
+                                   product.images[0] :
+                                   'https://placehold.co/400x300/cccccc/000000?text=No+Image';
+
+                const productCard = `
+                    <div class="bg-white rounded-xl shadow-lg overflow-hidden relative transform hover:scale-105 transition duration-300 cursor-pointer"
+                         onclick="showProductDetails('${product.id}')">
+                        <i class="wishlist-icon fa-heart fa-lg absolute top-3 right-3 z-10"
+                           data-product-name="${product.name}"
+                           onclick="event.stopPropagation(); toggleWishlist({ name: '${product.name}', price: ${product.price}, image: '${firstImage}' }, this)"></i>
+                        <img src="${firstImage}" alt="${product.name} Image" class="w-full h-48 object-cover" onerror="this.onerror=null;this.src='https://placehold.co/400x300/cccccc/000000?text=Image+Error';">
+                        <div class="p-6">
+                            <h3 class="text-xl font-semibold text-gray-800 mb-2">${product.name}</h3>
+                            <p class="text-gray-600 text-sm mb-4">${product.description.substring(0, 70)}...</p>
+                            <div class="flex justify-between items-center">
+                                <span class="text-2xl font-bold text-blue-600">KSh ${product.price.toLocaleString()}</span>
+                                <button class="bg-blue-600 text-white py-2 px-4 rounded-full hover:bg-blue-700 transition duration-300"
+                                        onclick="event.stopPropagation(); addToCart({ name: '${product.name}', price: ${product.price}, image: '${firstImage}' })">Add to Cart</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                productGrid.insertAdjacentHTML('beforeend', productCard);
+            });
+            updateWishlistCount(); // Update icon states after rendering
+            loadingProducts.style.display = 'none'; // Hide loading indicator once products are rendered
+        }
+
+
+        // Fetch products from localStorage
+        function fetchProducts() {
+            loadingProducts.style.display = 'block'; // Show loading indicator
+            try {
+                const storedProducts = JSON.parse(localStorage.getItem('products')) || [];
+                products = storedProducts; // Assign directly, no need for real-time listener from DB
+                renderProducts(products);
+                updateCartCount(); // Ensure counts are updated after products are loaded
+                updateWishlistCount();
+            } catch (error) {
+                console.error("Error fetching products from localStorage: ", error);
+                productGrid.innerHTML = '<p class="col-span-full text-center text-red-500">Error loading products. Please try again later.</p>';
+                loadingProducts.style.display = 'none';
+            }
+        }
+
+        // Initial setup on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchProducts();
+        });
+    </script>
+</body>
+</html>

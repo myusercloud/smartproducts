@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout - My Awesome Shop</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts - Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* Light gray background */
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-md py-4">
+        <div class="container mx-auto px-4 flex justify-between items-center">
+            <!-- Logo/Site Title -->
+            <a href="index.html" class="text-3xl font-bold text-gray-800 rounded-lg p-2 hover:bg-gray-100 transition duration-300">MyShop</a>
+
+            <!-- Navigation -->
+            <nav>
+                <ul class="flex space-x-6">
+                    <li><a href="index.html" class="text-gray-700 hover:text-blue-600 font-medium transition duration-300 rounded-lg p-2 hover:bg-blue-50">Home</a></li>
+                    <li><a href="#" class="text-gray-700 hover:text-blue-600 font-medium transition duration-300 rounded-lg p-2 hover:bg-blue-50">Shop</a></li>
+                    <li><a href="#" class="text-gray-700 hover:text-blue-600 font-medium transition duration-300 rounded-lg p-2 hover:bg-blue-50">About Us</a></li>
+                    <li><a href="#" class="text-gray-700 hover:text-blue-600 font-medium transition duration-300 rounded-lg p-2 hover:bg-blue-50">Contact</a></li>
+                    <li><a href="cart.html" id="cart-link" class="text-gray-700 hover:text-blue-600 font-medium transition duration-300 rounded-lg p-2 hover:bg-blue-50">Cart (<span id="cart-count">0</span>)</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8 flex-grow">
+        <section class="bg-white rounded-xl shadow-lg p-8 mb-10">
+            <h2 class="text-4xl font-bold text-gray-800 mb-8 text-center">Order Summary</h2>
+
+            <div id="checkout-items-container" class="space-y-4 mb-6 border-b pb-4 border-gray-200">
+                <!-- Cart items will be rendered here by JavaScript -->
+                <p class="text-gray-600 text-center" id="empty-checkout-message">Your cart is empty. Please go back to the <a href="index.html" class="text-blue-600 hover:underline">shop</a>.</p>
+            </div>
+
+            <div class="flex justify-end items-center mt-6">
+                <span class="text-3xl font-bold text-gray-800">Grand Total: KSh <span id="checkout-total">0.00</span></span>
+            </div>
+
+            <div class="flex justify-center mt-10">
+                <a href="order.html" id="proceed-to-payment-btn" class="bg-blue-600 text-white font-semibold py-3 px-8 rounded-full shadow-lg hover:bg-blue-700 transform hover:scale-105 transition duration-300 text-lg">Proceed to Payment</a>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8 mt-auto rounded-t-xl shadow-inner">
+        <div class="container mx-auto px-4 text-center">
+            <p>&copy; 2025 MyShop. All rights reserved.</p>
+            <div class="flex justify-center space-x-6 mt-4">
+                <a href="#" class="text-gray-400 hover:text-white transition duration-300 rounded-lg p-2 hover:bg-gray-700">Privacy Policy</a>
+                <a href="#" class="text-gray-400 hover:text-white transition duration-300 rounded-lg p-2 hover:bg-gray-700">Terms of Service</a>
+                <a href="#" class="text-gray-400 hover:text-white transition duration-300 rounded-lg p-2 hover:bg-gray-700">FAQ</a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        let cart = JSON.parse(localStorage.getItem('shoppingCart')) || [];
+
+        const cartCountSpan = document.getElementById('cart-count');
+        const checkoutItemsContainer = document.getElementById('checkout-items-container');
+        const checkoutTotalSpan = document.getElementById('checkout-total');
+        const emptyCheckoutMessage = document.getElementById('empty-checkout-message');
+        const proceedToPaymentBtn = document.getElementById('proceed-to-payment-btn');
+
+        function updateCartCount() {
+            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+            cartCountSpan.textContent = totalItems;
+        }
+
+        function renderCheckoutItems() {
+            checkoutItemsContainer.innerHTML = '';
+            let total = 0;
+
+            if (cart.length === 0) {
+                emptyCheckoutMessage.style.display = 'block';
+                proceedToPaymentBtn.classList.add('hidden'); // Hide button if cart is empty
+            } else {
+                emptyCheckoutMessage.style.display = 'none';
+                proceedToPaymentBtn.classList.remove('hidden'); // Show button if cart has items
+                cart.forEach(item => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'flex items-center justify-between bg-gray-50 p-4 rounded-lg shadow-sm';
+                    itemDiv.innerHTML = `
+                        <div class="flex items-center space-x-4">
+                            <img src="${item.image}" alt="${item.name}" class="w-16 h-16 object-cover rounded-lg">
+                            <div>
+                                <h4 class="font-semibold text-gray-800">${item.name}</h4>
+                                <p class="text-gray-600">KSh ${item.price.toLocaleString()} x ${item.quantity}</p>
+                            </div>
+                        </div>
+                        <span class="text-lg font-medium text-gray-800">KSh ${(item.price * item.quantity).toLocaleString()}</span>
+                    `;
+                    checkoutItemsContainer.appendChild(itemDiv);
+                    total += item.price * item.quantity;
+                });
+            }
+            checkoutTotalSpan.textContent = total.toLocaleString();
+            updateCartCount();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderCheckoutItems();
+        });
+    </script>
+</body>
+</html>

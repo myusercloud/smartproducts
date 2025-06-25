@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyFunShop - Account</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts - Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* Light gray background */
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        /* Basic form styling adjustments */
+        input[type="email"],
+        input[type="password"],
+        input[type="text"] { /* Added for username/phone if needed later */
+            border: 1px solid #D1D5DB; /* gray-300 */
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            width: 100%;
+        }
+        input[type="email"]:focus,
+        input[type="password"]:focus,
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #3B82F6; /* blue-500 */
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+        .error-message {
+            color: #EF4444; /* red-500 */
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+        }
+        .info-message {
+            color: #22C55E; /* green-500 */
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+        }
+        /* Message Box styling for pop-up messages */
+        .message-box {
+            position: fixed;
+            top: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .message-box.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .message-box.success {
+            background-color: #22C55E; /* Green-500 */
+            color: white;
+        }
+        .message-box.error {
+            background-color: #EF4444; /* Red-500 */
+            color: white;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-md py-4">
+        <div class="container mx-auto px-4 flex justify-between items-center flex-wrap">
+            <!-- Logo/Site Title -->
+            <a href="index.html" class="text-3xl font-bold text-gray-800 rounded-lg p-2 hover:bg-gray-100 transition duration-300 mb-2 md:mb-0">MyFunShop</a>
+
+            <!-- Navigation -->
+            <nav class="w-full md:w-auto">
+                <ul class="flex justify-center md:justify-end space-x-4 sm:space-x-6 flex-wrap">
+                    <li><a href="index.html" class="text-gray-700 hover:text-blue-600 font-medium transition duration-300 rounded-lg p-2 hover:bg-blue-50">Home</a></li>
+                    <li><a href="account.html" class="text-gray-700 hover:text-blue-600 font-medium transition duration-300 rounded-lg p-2 hover:bg-blue-50">Account</a></li>
+                    <li><a href="#" class="text-gray-700 hover:text-blue-600 font-medium transition duration-300 rounded-lg p-2 hover:bg-blue-50">Orders</a></li>
+                    <li><a href="wishlist.html" class="text-gray-700 hover:text-red-600 font-medium transition duration-300 rounded-lg p-2 hover:bg-red-50">Wishlist (<span id="wishlist-count">0</span>)</a></li>
+                    <li><a href="cart.html" class="text-gray-700 hover:text-blue-600 font-medium transition duration-300 rounded-lg p-2 hover:bg-blue-50">Cart (<span id="cart-count">0</span>)</a></li>
+                    <!-- New "Sell" link -->
+                    <li><a href="admin.html" class="text-gray-700 hover:text-blue-600 font-medium transition duration-300 rounded-lg p-2 hover:bg-blue-50">Sell</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Global Message Box -->
+    <div id="globalMessageBox" class="message-box"></div>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8 flex-grow flex items-center justify-center">
+        <!-- Forms Section -->
+        <section id="formsSection" class="bg-white rounded-xl shadow-lg p-8 w-full max-w-md">
+            <!-- Sign-in Form -->
+            <div id="signInContainer">
+                <h2 class="text-3xl font-bold text-gray-800 mb-6 text-center">Sign In</h2>
+                <form id="signInForm" onsubmit="event.preventDefault(); handleSignIn();">
+                    <div class="mb-4">
+                        <label for="signInEmail" class="block text-gray-700 text-sm font-bold mb-2">Email:</label>
+                        <input type="email" id="signInEmail" name="email" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required autocomplete="username">
+                        <p id="signInEmailError" class="error-message hidden"></p>
+                    </div>
+                    <div class="mb-6">
+                        <label for="signInPassword" class="block text-gray-700 text-sm font-bold mb-2">Password:</label>
+                        <input type="password" id="signInPassword" name="password" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline" required autocomplete="current-password">
+                        <p id="signInPasswordError" class="error-message hidden"></p>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full focus:outline-none focus:shadow-outline transition duration-300">
+                            Sign In
+                        </button>
+                        <a href="#" class="inline-block align-baseline font-bold text-sm text-blue-600 hover:text-blue-800">
+                            Forgot Password?
+                        </a>
+                    </div>
+                    <p class="text-center text-gray-600 text-sm mt-6">Don't have an account? <a href="#" onclick="showSignUpForm()" class="text-blue-600 hover:text-blue-800 font-bold">Sign Up</a></p>
+                </form>
+            </div>
+
+            <!-- Sign-up Form (Initially hidden) -->
+            <div id="signUpContainer" class="hidden">
+                <h2 class="text-3xl font-bold text-gray-800 mb-6 text-center">Create Account</h2>
+                <form id="signUpForm" onsubmit="event.preventDefault(); handleSignUp();">
+                    <div class="mb-4">
+                        <label for="signUpEmail" class="block text-gray-700 text-sm font-bold mb-2">Email:</label>
+                        <input type="email" id="signUpEmail" name="email" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required autocomplete="new-username">
+                        <p id="signUpEmailError" class="error-message hidden"></p>
+                        <p class="info-message text-xs mt-1">
+                            Username or phone number sign-up would require advanced backend services not available in this demo.
+                        </p>
+                    </div>
+                    <div class="mb-6">
+                        <label for="signUpPassword" class="block text-gray-700 text-sm font-bold mb-2">Password:</label>
+                        <input type="password" id="signUpPassword" name="password" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline" required autocomplete="new-password">
+                        <p id="signUpPasswordError" class="error-message hidden"></p>
+                    </div>
+                    <div class="mb-6">
+                        <label for="confirmPassword" class="block text-gray-700 text-sm font-bold mb-2">Confirm Password:</label>
+                        <input type="password" id="confirmPassword" name="confirmPassword" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline" required autocomplete="new-password">
+                        <p id="confirmPasswordError" class="error-message hidden"></p>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full focus:outline-none focus:shadow-outline transition duration-300">
+                            Sign Up
+                        </button>
+                    </div>
+                    <p class="text-center text-gray-600 text-sm mt-6">Already have an account? <a href="#" onclick="showSignInForm()" class="text-blue-600 hover:text-blue-800 font-bold">Sign In</a></p>
+                </form>
+            </div>
+        </section>
+
+        <!-- Account Dashboard Section (hidden by default) -->
+        <section id="accountDashboard" class="bg-white rounded-xl shadow-lg p-8 w-full max-w-2xl hidden">
+            <h2 class="text-3xl font-bold text-gray-800 mb-6 text-center">Welcome, <span id="loggedInUserIdentifier" class="text-blue-600"></span>!</h2>
+            <p class="text-gray-700 text-center mb-8">Your User ID: <span id="displayUserId" class="font-mono text-gray-600 break-all text-sm"></span></p>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                <div class="bg-gray-100 p-6 rounded-lg text-center shadow-sm hover:shadow-md transition duration-300">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-2">Your Orders</h3>
+                    <p class="text-gray-600 mb-4">Track your past and current orders.</p>
+                    <a href="#" class="text-blue-600 hover:text-blue-800 font-bold">View Orders</a>
+                </div>
+                <div class="bg-gray-100 p-6 rounded-lg text-center shadow-sm hover:shadow-md transition duration-300">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-2">Your Cart</h3>
+                    <p class="text-gray-600 mb-4">Review items in your shopping cart.</p>
+                    <a href="cart.html" class="text-blue-600 hover:text-blue-800 font-bold">Go to Cart</a>
+                </div>
+                <div class="bg-gray-100 p-6 rounded-lg text-center shadow-sm hover:shadow-md transition duration-300">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-2">Your Wishlist</h3>
+                    <p class="text-gray-600 mb-4">See your saved favorite products.</p>
+                    <a href="wishlist.html" class="text-blue-600 hover:text-blue-800 font-bold">View Wishlist</a>
+                </div>
+            </div>
+
+            <div class="text-center mt-10">
+                <button onclick="handleSignOut()" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-full focus:outline-none focus:shadow-outline transition duration-300">
+                    Sign Out
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8 mt-auto rounded-t-xl shadow-inner">
+        <div class="container mx-auto px-4 text-center">
+        <p>&copy; 2025 MyFunShop. All rights reserved.</p>
+            <div class="flex justify-center space-x-4 sm:space-x-6 mt-4 flex-wrap">
+                <a href="#" class="text-gray-400 hover:text-white transition duration-300 rounded-lg p-2 hover:bg-gray-700">Privacy Policy</a>
+                <a href="#" class="text-gray-400 hover:text-white transition duration-300 rounded-lg p-2 hover:bg-gray-700">Terms of Service</a>
+                <a href="#" class="text-gray-400 hover:text-white transition duration-300 rounded-lg p-2 hover:bg-gray-700">FAQ</a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // DOM elements for form toggling and messages
+        const formsSection = document.getElementById('formsSection');
+        const signInContainer = document.getElementById('signInContainer');
+        const signUpContainer = document.getElementById('signUpContainer');
+        const accountDashboard = document.getElementById('accountDashboard');
+        const signInEmailInput = document.getElementById('signInEmail');
+        const signInPasswordInput = document.getElementById('signInPassword');
+        const signUpEmailInput = document.getElementById('signUpEmail');
+        const signUpPasswordInput = document.getElementById('signUpPassword');
+        const confirmPasswordInput = document.getElementById('confirmPassword');
+        const signInEmailError = document.getElementById('signInEmailError');
+        const signInPasswordError = document.getElementById('signInPasswordError');
+        const signUpEmailError = document.getElementById('signUpEmailError');
+        const signUpPasswordError = document.getElementById('signUpPasswordError');
+        const confirmPasswordError = document.getElementById('confirmPasswordError');
+        const loggedInUserIdentifier = document.getElementById('loggedInUserIdentifier');
+        const displayUserId = document.getElementById('displayUserId');
+        const globalMessageBox = document.getElementById('globalMessageBox');
+
+        // Simple hardcoded user data for demonstration (NOT SECURE FOR PRODUCTION)
+        const USERS = JSON.parse(localStorage.getItem('users')) || {};
+
+        function saveUsers() {
+            localStorage.setItem('users', JSON.stringify(USERS));
+        }
+
+        /**
+         * Displays a temporary message box at the top of the page.
+         * @param {string} message The message to display.
+         * @param {string} type 'success' or 'error' to change message box styling.
+         */
+        function showMessageBox(message, type = 'success') {
+            globalMessageBox.textContent = message;
+            globalMessageBox.className = `message-box ${type} show`;
+            setTimeout(() => {
+                globalMessageBox.classList.remove('show');
+            }, 3000); // Hide after 3 seconds
+        }
+
+        /**
+         * Clears all error messages on the forms.
+         */
+        function clearErrors() {
+            signInEmailError.classList.add('hidden');
+            signInPasswordError.classList.add('hidden');
+            signUpEmailError.classList.add('hidden');
+            signUpPasswordError.classList.add('hidden');
+            confirmPasswordError.classList.add('hidden');
+        }
+
+        /**
+         * Shows the sign-up form and hides the sign-in form.
+         */
+        window.showSignUpForm = function() {
+            clearErrors();
+            signInContainer.classList.add('hidden');
+            signUpContainer.classList.remove('hidden');
+        }
+
+        /**
+         * Shows the sign-in form and hides the sign-up form.
+         */
+        window.showSignInForm = function() {
+            clearErrors();
+            signUpContainer.classList.add('hidden');
+            signInContainer.classList.remove('hidden');
+        }
+
+        /**
+         * Toggles the UI between sign-in/sign-up forms and the dashboard based on auth state.
+         */
+        function updateUIOnAuthStateChange() {
+            const loggedInEmail = sessionStorage.getItem('loggedInUser');
+            if (loggedInEmail) {
+                // User is signed in
+                formsSection.classList.add('hidden');
+                accountDashboard.classList.remove('hidden');
+                loggedInUserIdentifier.textContent = loggedInEmail;
+                displayUserId.textContent = 'DemoUser_' + loggedInEmail.replace(/[^a-zA-Z0-9]/g, ''); // Simple ID
+            } else {
+                // No user signed in
+                formsSection.classList.remove('hidden');
+                accountDashboard.classList.add('hidden');
+                showSignInForm();
+            }
+        }
+
+        /**
+         * Handles user sign-up with email and password.
+         */
+        window.handleSignUp = function() {
+            clearErrors();
+            const email = signUpEmailInput.value.trim();
+            const password = signUpPasswordInput.value.trim();
+            const confirmPassword = confirmPasswordInput.value.trim();
+
+            let isValid = true;
+
+            if (!email || !/@.+\..+/.test(email)) {
+                signUpEmailError.textContent = 'Please enter a valid email address.';
+                signUpEmailError.classList.remove('hidden');
+                isValid = false;
+            }
+            if (password.length < 6) {
+                signUpPasswordError.textContent = 'Password must be at least 6 characters long.';
+                signUpPasswordError.classList.remove('hidden');
+                isValid = false;
+            }
+            if (password !== confirmPassword) {
+                confirmPasswordError.textContent = 'Passwords do not match.';
+                confirmPasswordError.classList.remove('hidden');
+                isValid = false;
+            }
+
+            if (!isValid) return;
+
+            if (USERS[email]) {
+                showMessageBox('This email is already registered. Please sign in or use a different email.', 'error');
+                return;
+            }
+
+            // Store user in simple JS object and localStorage (NOT SECURE)
+            USERS[email] = { password: password }; // In a real app, hash this password!
+            saveUsers();
+
+            showMessageBox('Account created successfully! You can now sign in.', 'success');
+            showSignInForm(); // Redirect to sign-in after successful sign-up
+        }
+
+        /**
+         * Handles user sign-in with email and password.
+         */
+        window.handleSignIn = function() {
+            clearErrors();
+            const email = signInEmailInput.value.trim();
+            const password = signInPasswordInput.value.trim();
+
+            let isValid = true;
+            if (!email) {
+                signInEmailError.textContent = 'Email cannot be empty.';
+                signInEmailError.classList.remove('hidden');
+                isValid = false;
+            }
+            if (!password) {
+                signInPasswordError.textContent = 'Password cannot be empty.';
+                signInPasswordError.classList.remove('hidden');
+                isValid = false;
+            }
+
+            if (!isValid) return;
+
+            if (USERS[email] && USERS[email].password === password) {
+                sessionStorage.setItem('loggedInUser', email); // Store session state
+                showMessageBox('Signed in successfully!', 'success');
+                updateUIOnAuthStateChange(); // Update UI
+            } else {
+                showMessageBox('Invalid email or password.', 'error');
+            }
+        }
+
+        /**
+         * Handles user sign-out.
+         */
+        window.handleSignOut = function() {
+            sessionStorage.removeItem('loggedInUser'); // Clear session state
+            showMessageBox('Signed out successfully!', 'success');
+            updateUIOnAuthStateChange(); // Update UI
+            signInEmailInput.value = ''; // Clear fields
+            signInPasswordInput.value = '';
+        }
+
+        // Functions to update cart/wishlist counts (from localStorage)
+        function updateCartCount() {
+            const cart = JSON.parse(localStorage.getItem('shoppingCart')) || [];
+            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+            document.getElementById('cart-count').textContent = totalItems;
+        }
+
+        function updateWishlistCount() {
+            const wishlist = JSON.parse(localStorage.getItem('wishlist')) || [];
+            document.getElementById('wishlist-count').textContent = wishlist.length;
+        }
+
+        function updateCartAndWishlistCounts() {
+            updateCartCount();
+            updateWishlistCount();
+        }
+
+        // Initial setup on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            updateUIOnAuthStateChange();
+            updateCartAndWishlistCounts();
+        });
+    </script>
+</body>
+</html>
