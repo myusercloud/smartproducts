@@ -183,9 +183,9 @@
                         </div>
                         <div class="flex items-center space-x-4">
                             <button class="remove-from-wishlist-btn bg-red-400 text-white py-1 px-3 rounded-full hover:bg-red-500 transition duration-300 text-sm"
-                                data-product-name="${item.name}">Remove</button>
+                                data-product-id="${item.id || item.name}">Remove</button> <!-- Prefer item.id -->
                             <button class="add-to-cart-from-wishlist-btn bg-blue-500 text-white py-1 px-3 rounded-full hover:bg-blue-600 transition duration-300 text-sm"
-                                data-product-name="${item.name}" data-product-price="${item.price}" data-product-image="${item.image}">Add to Cart</button>
+                                data-product-id="${item.id || item.name}" data-product-name="${item.name}" data-product-price="${item.price}" data-product-image="${item.image}">Add to Cart</button>
                         </div>
                     `;
                     wishlistItemsContainer.appendChild(itemDiv);
@@ -195,12 +195,19 @@
         }
 
         /**
-         * Removes an item from the wishlist.
-         * @param {string} name Product name to remove.
+         * Removes an item from the wishlist using its ID (or name as fallback).
+         * @param {string} productId Product ID (or name) to remove.
          */
-        function removeFromWishlist(name) {
-            wishlist = wishlist.filter(item => item.name !== name);
-            showMessageBox(`${name} removed from wishlist.`, 'error');
+        function removeFromWishlist(productId) {
+            const itemToRemove = wishlist.find(item => (item.id || item.name) === productId);
+            if (!itemToRemove) {
+                console.error("Item to remove not found in wishlist:", productId);
+                showMessageBox('Error: Item not found.', 'error');
+                return;
+            }
+            const itemName = itemToRemove.name; // For the message
+            wishlist = wishlist.filter(item => (item.id || item.name) !== productId);
+            showMessageBox(`${itemName} removed from wishlist.`, 'error');
             saveWishlist(); // Save wishlist after modification
             renderWishlistItems(); // Re-render wishlist on this page
         }
@@ -217,15 +224,18 @@
 
         /**
          * Adds an item to the cart (from wishlist).
-         * @param {object} product - The product object { name, price, image }.
+         * @param {object} product - The product object { id, name, price, image }.
          */
         function addToCart(product) {
-            const existingItemIndex = cart.findIndex(item => item.name === product.name);
+            // Use product.id if available, otherwise fallback to name for finding existing item
+            const findCondition = item => (product.id ? item.id === product.id : item.name === product.name);
+            const existingItemIndex = cart.findIndex(findCondition);
 
             if (existingItemIndex > -1) {
-                cart[existingItemIndex].quantity++;
+                cart[existingItemIndex].quantity = (cart[existingItemIndex].quantity || 0) + 1;
             } else {
-                cart.push({ ...product, quantity: 1, id: Date.now() });
+                // The product object from wishlist item should already have 'id' if it came from Firestore
+                cart.push({ ...product, quantity: 1 });
             }
             saveCart();
             updateCartCount();
@@ -235,16 +245,17 @@
 
         // Event Listeners for wishlist.html
         document.addEventListener('DOMContentLoaded', () => {
-            // Event delegation for "Remove" buttons within the wishlist
+            // Event delegation for "Remove" and "Add to Cart" buttons within the wishlist
             wishlistItemsContainer.addEventListener('click', (event) => {
                 if (event.target.classList.contains('remove-from-wishlist-btn')) {
-                    const productName = event.target.dataset.productName;
-                    removeFromWishlist(productName);
+                    const productId = event.target.dataset.productId;
+                    removeFromWishlist(productId);
                 } else if (event.target.classList.contains('add-to-cart-from-wishlist-btn')) {
+                    const productId = event.target.dataset.productId; // This is the Firestore ID
                     const productName = event.target.dataset.productName;
                     const productPrice = parseFloat(event.target.dataset.productPrice);
                     const productImage = event.target.dataset.productImage;
-                    addToCart({ name: productName, price: productPrice, image: productImage });
+                    addToCart({ id: productId, name: productName, price: productPrice, image: productImage });
                 }
             });
 

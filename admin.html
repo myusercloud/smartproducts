@@ -10,6 +10,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Font Awesome for Trash Icon -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-storage-compat.js"></script>
+
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -37,6 +43,12 @@
         }
         .error-message.show {
             background-color: #EF4444; /* Red */
+            color: white;
+            opacity: 1;
+            visibility: visible;
+        }
+        .info-message.show { /* Added for info messages */
+            background-color: #3B82F6; /* Blue-500 */
             color: white;
             opacity: 1;
             visibility: visible;
@@ -144,6 +156,22 @@
         const ADMIN_USERNAME = 'admin';
         const ADMIN_PASSWORD = '1234'; // Changed password as requested!
 
+        // Firebase Config (from user)
+        const firebaseConfig = {
+            apiKey: "AIzaSyAPRb8wq0wLrjDdnBkstwOIdbWQWX876CU",
+            authDomain: "myshopproducts-1b205.firebaseapp.com",
+            projectId: "myshopproducts-1b205",
+            storageBucket: "myshopproducts-1b205.appspot.com",
+            messagingSenderId: "820230793051",
+            appId: "1:820230793051:web:768ea0833bb2bf18455c7e",
+            measurementId: "G-3WRP97RB3P"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const storage = firebase.storage();
+
         // DOM elements
         const statusMessage = document.getElementById('statusMessage');
         const existingProductsList = document.getElementById('existingProductsList');
@@ -156,93 +184,113 @@
         const loginErrorMessage = document.getElementById('loginErrorMessage');
         const adminLogoutLink = document.getElementById('adminLogoutLink');
 
-        // Function to display status messages (success/error)
-        function showStatusMessage(message, type = 'success') {
+        // Function to display status messages (success/error/info)
+        function showStatusMessage(message, type = 'success') { // type can be 'success', 'error', or 'info'
             statusMessage.innerText = message;
-            statusMessage.classList.remove('success-message', 'error-message');
-            statusMessage.classList.add(`${type}-message`);
+            statusMessage.classList.remove('success-message', 'error-message', 'info-message'); // Clear all possible type classes
+            statusMessage.classList.add(`${type}-message`); // Add the specific type class
             statusMessage.classList.add('show');
             setTimeout(() => {
                 statusMessage.classList.remove('show');
-            }, 3000); // Message disappears after 3 seconds
+            }, type === 'info' ? 5000 : 3000); // Longer display for info messages, or adjust as needed
         }
 
         /**
-         * Reads a File object and converts it to a Base64 string.
-         * @param {File} file - The file to convert.
-         * @returns {Promise<string>} A promise that resolves with the Base64 string.
+         * Loads products from Firestore and renders them.
          */
-        function readFileAsBase64(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = error => reject(error);
-                reader.readAsDataURL(file);
-            });
-        }
-
-        /**
-         * Loads products from localStorage and renders them.
-         */
-        function loadAndRenderProducts() {
-            const products = JSON.parse(localStorage.getItem('products')) || [];
+        async function loadAndRenderProducts() {
             existingProductsList.innerHTML = ''; // Clear existing list
+            noProductsMessage.classList.add('hidden'); // Hide by default
 
-            if (products.length === 0) {
-                noProductsMessage.classList.remove('hidden');
-                return;
-            } else {
-                noProductsMessage.classList.add('hidden');
-            }
+            try {
+                const snapshot = await db.collection('products').orderBy('createdAt', 'desc').get();
+                if (snapshot.empty) {
+                    noProductsMessage.classList.remove('hidden');
+                    return;
+                }
 
-            products.forEach(product => {
-                const productDiv = document.createElement('div');
-                productDiv.id = `product-${product.id}`; // Add ID for easy removal
-                productDiv.classList.add('flex', 'items-center', 'justify-between', 'p-4', 'bg-gray-50', 'rounded-lg', 'shadow-sm');
+                snapshot.forEach(doc => {
+                    const product = { id: doc.id, ...doc.data() }; // Include Firestore document ID
 
-                const firstImage = (product.images && product.images.length > 0) ?
-                                   product.images[0] :
-                                   'https://placehold.co/50x50/cccccc/000000?text=No+Image';
+                    const productDiv = document.createElement('div');
+                    productDiv.id = `product-${product.id}`;
+                    productDiv.classList.add('flex', 'items-center', 'justify-between', 'p-4', 'bg-gray-50', 'rounded-lg', 'shadow-sm');
 
-                productDiv.innerHTML = `
-                    <div class="flex items-center space-x-4">
-                        <img src="${firstImage}" alt="${product.name}" class="w-12 h-12 object-cover rounded-md" onerror="this.onerror=null;this.src='https://placehold.co/50x50/cccccc/000000?text=Error';">
-                        <div>
-                            <h3 class="text-lg font-semibold text-gray-800">${product.name}</h3>
-                            <p class="text-gray-600 text-sm">KSh ${product.price.toLocaleString()}</p>
+                    const firstImage = (product.images && product.images.length > 0) ?
+                                       product.images[0] : // This is now a URL
+                                       'https://placehold.co/50x50/cccccc/000000?text=No+Image';
+
+                    productDiv.innerHTML = `
+                        <div class="flex items-center space-x-4">
+                            <img src="${firstImage}" alt="${product.name}" class="w-12 h-12 object-cover rounded-md" onerror="this.onerror=null;this.src='https://placehold.co/50x50/cccccc/000000?text=Img+Error';">
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-800">${product.name}</h3>
+                                <p class="text-gray-600 text-sm">KSh ${product.price ? product.price.toLocaleString() : 'N/A'}</p>
+                            </div>
                         </div>
-                    </div>
-                    <button data-product-id="${product.id}" class="delete-product-btn text-red-500 hover:text-red-700 transition duration-300">
-                        <i class="fas fa-trash-alt"></i>
-                    </button>
-                `;
-                existingProductsList.appendChild(productDiv);
-            });
-
-            // Attach event listeners to new delete buttons
-            document.querySelectorAll('.delete-product-btn').forEach(button => {
-                button.addEventListener('click', (event) => {
-                    const productIdToDelete = event.currentTarget.dataset.productId;
-                    deleteProduct(productIdToDelete);
+                        <button data-product-id="${product.id}" class="delete-product-btn text-red-500 hover:text-red-700 transition duration-300">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    `;
+                    existingProductsList.appendChild(productDiv);
                 });
-            });
+
+                // Attach event listeners to new delete buttons
+                document.querySelectorAll('.delete-product-btn').forEach(button => {
+                    button.addEventListener('click', async (event) => {
+                        const productIdToDelete = event.currentTarget.dataset.productId;
+                        // Find product data to get image URLs for deletion from storage
+                        const productDoc = await db.collection('products').doc(productIdToDelete).get();
+                        if (productDoc.exists) {
+                            const productData = productDoc.data();
+                            await deleteProduct(productIdToDelete, productData.images || []);
+                        } else {
+                            showStatusMessage('Product not found in database for deletion.', 'error');
+                        }
+                    });
+                });
+
+            } catch (error) {
+                console.error("Error loading products from Firebase: ", error);
+                showStatusMessage(`Error loading products: ${error.message}`, 'error');
+                noProductsMessage.textContent = 'Error loading products.';
+                noProductsMessage.classList.remove('hidden');
+            }
         }
 
         /**
-         * Deletes a product from localStorage.
+         * Deletes a product from Firestore and its images from Firebase Storage.
          * @param {string} productIdToDelete - The ID of the product to delete.
+         * @param {string[]} imageUrls - Array of image URLs to delete from Storage.
          */
-        function deleteProduct(productIdToDelete) {
-            let products = JSON.parse(localStorage.getItem('products')) || [];
-            const initialLength = products.length;
-            products = products.filter(product => product.id !== productIdToDelete);
+        async function deleteProduct(productIdToDelete, imageUrls) {
+            if (!confirm(`Are you sure you want to delete product ID: ${productIdToDelete}? This action cannot be undone.`)) {
+                return;
+            }
+            showStatusMessage('Deleting product...', 'info');
+            try {
+                // Delete from Firestore
+                await db.collection('products').doc(productIdToDelete).delete();
 
-            if (products.length < initialLength) {
-                localStorage.setItem('products', JSON.stringify(products));
-                showStatusMessage('Product deleted successfully!', 'success');
+                // Delete images from Storage
+                for (const imageUrl of imageUrls) {
+                    try {
+                        // Create a storage reference from the HTTPS URL
+                        const storageRef = storage.refFromURL(imageUrl);
+                        await storageRef.delete();
+                        console.log(`Deleted image: ${imageUrl} from Firebase Storage.`);
+                    } catch (imgError) {
+                        // Log error if a specific image fails, but continue
+                        console.error(`Error deleting image ${imageUrl} from Storage: `, imgError);
+                        // Optionally, inform user about partial success/failure
+                    }
+                }
+
+                showStatusMessage('Product and associated images deleted successfully!', 'success');
                 loadAndRenderProducts(); // Re-render the list
-            } else {
-                showStatusMessage('Product not found.', 'error');
+            } catch (error) {
+                console.error("Error deleting product from Firebase: ", error);
+                showStatusMessage(`Error deleting product: ${error.message}`, 'error');
             }
         }
 
@@ -262,38 +310,33 @@
                 return;
             }
 
+            showStatusMessage('Adding product, please wait...', 'info'); // Show a loading message
+
             try {
-                const base64Images = [];
+                const imageUrls = [];
                 for (let i = 0; i < files.length; i++) {
-                    const base64 = await readFileAsBase64(files[i]);
-                    base64Images.push(base64);
+                    const file = files[i];
+                    const storageRef = storage.ref(`products/${Date.now()}_${file.name}`);
+                    const snapshot = await storageRef.put(file);
+                    const downloadURL = await snapshot.ref.getDownloadURL();
+                    imageUrls.push(downloadURL);
                 }
 
-                let products = JSON.parse(localStorage.getItem('products')) || [];
-
-                // Create a unique ID for the new product
-                const newProductId = `prod_${Date.now()}`;
-
-                // Add the new product
-                const newProduct = {
-                    id: newProductId,
+                // Add the new product to Firestore
+                // Firestore will auto-generate an ID if we use .add()
+                await db.collection('products').add({
                     name: productName,
                     description: productDescription,
                     price: productPrice,
-                    images: base64Images,
-                    createdAt: new Date().toISOString() // Store timestamp as ISO string
-                };
+                    images: imageUrls, // Store array of URLs
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp() // Use server timestamp
+                });
 
-                products.push(newProduct);
-
-                // Save the updated products array back to localStorage
-                localStorage.setItem('products', JSON.stringify(products));
-
-                showStatusMessage('Product added successfully!', 'success');
+                showStatusMessage('Product added successfully to Firebase!', 'success');
                 document.getElementById('addProductForm').reset(); // Clear form
                 loadAndRenderProducts(); // Re-render the list after adding
             } catch (error) {
-                console.error("Error adding product: ", error);
+                console.error("Error adding product to Firebase: ", error);
                 showStatusMessage(`Error adding product: ${error.message}`, 'error');
             }
         });

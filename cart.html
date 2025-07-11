@@ -147,7 +147,7 @@
                         <div class="flex items-center space-x-4">
                             <span class="text-gray-700">Quantity: ${item.quantity}</span>
                             <button class="remove-from-cart-btn bg-red-400 text-white py-1 px-3 rounded-full hover:bg-red-500 transition duration-300 text-sm"
-                                data-product-name="${item.name}">Remove</button>
+                                data-product-id="${item.id || item.name}">Remove</button> <!-- Prefer item.id -->
                         </div>
                     `;
                     cartItemsContainer.appendChild(itemDiv);
@@ -160,12 +160,19 @@
         }
 
         /**
-         * Removes an item from the cart.
-         * @param {string} name Product name to remove.
+         * Removes an item from the cart using its ID (or name as fallback).
+         * @param {string} productId Product ID (or name) to remove.
          */
-        function removeFromCart(name) {
-            cart = cart.filter(item => item.name !== name);
-            displayMessage(`${name} removed from cart.`, 'error');
+        function removeFromCart(productId) {
+            const itemToRemove = cart.find(item => (item.id || item.name) === productId);
+            if (!itemToRemove) {
+                console.error("Item to remove not found in cart:", productId);
+                displayMessage('Error: Item not found.', 'error');
+                return;
+            }
+            const itemName = itemToRemove.name; // For the message
+            cart = cart.filter(item => (item.id || item.name) !== productId);
+            displayMessage(`${itemName} removed from cart.`, 'error');
             saveCart(); // Save cart after modification
             renderCartItems(); // Re-render cart on this page
         }
@@ -185,8 +192,8 @@
             // Event delegation for "Remove" buttons within the cart
             cartItemsContainer.addEventListener('click', (event) => {
                 if (event.target.classList.contains('remove-from-cart-btn')) {
-                    const productName = event.target.dataset.productName;
-                    removeFromCart(productName);
+                    const productId = event.target.dataset.productId;
+                    removeFromCart(productId);
                 }
             });
 

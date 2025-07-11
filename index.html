@@ -15,6 +15,15 @@
             font-family: 'Inter', sans-serif;
             background-color: #f8fafc; /* Light gray background */
         }
+
+        /* Firebase SDK (Copied from admin.html for now, consider shared JS file later) */
+        /* It's generally better to include these in the <head> but before custom scripts */
+    </style>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-storage-compat.js"></script>
+    <style>
         /* Modal styles */
         .modal-overlay {
             position: fixed;
@@ -204,8 +213,24 @@
     </footer>
 
     <script>
+        // Firebase Config (Copied from admin.html - ensure this is kept in sync or use a shared config file/method if app grows)
+        const firebaseConfig = {
+            apiKey: "AIzaSyAPRb8wq0wLrjDdnBkstwOIdbWQWX876CU",
+            authDomain: "myshopproducts-1b205.firebaseapp.com",
+            projectId: "myshopproducts-1b205",
+            storageBucket: "myshopproducts-1b205.appspot.com",
+            messagingSenderId: "820230793051",
+            appId: "1:820230793051:web:768ea0833bb2bf18455c7e",
+            measurementId: "G-3WRP97RB3P"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        // const storage = firebase.storage(); // Not directly used for image display here, but good to have if needed for other interactions
+
         // Global variables for products and UI elements
-        let products = []; // To store products fetched from localStorage
+        let products = []; // To store products fetched from Firestore
         let cart = JSON.parse(localStorage.getItem('shoppingCart')) || [];
         let wishlist = JSON.parse(localStorage.getItem('wishlist')) || [];
 
@@ -242,9 +267,12 @@
 
             // Update heart icon states for dynamically loaded products
             document.querySelectorAll('.wishlist-icon').forEach(icon => {
-                // Get the product name from a data attribute or by traversing DOM
-                const productName = icon.dataset.productName;
-                const isInWishlist = wishlist.some(item => item.name === productName);
+                const productId = icon.dataset.productId; // Use product ID from data attribute
+                const productName = icon.dataset.productName; // Fallback or for display consistency if needed
+
+                // Prefer ID for checking if item is in wishlist
+                const isInWishlist = wishlist.some(item => item.id === productId || (!item.id && item.name === productName));
+
                 if (isInWishlist) {
                     icon.classList.remove('far'); // empty heart
                     icon.classList.add('fa-solid'); // filled heart
@@ -288,6 +316,7 @@
 
             // Store current product details for "Add to Cart" from modal
             currentProduct = {
+                id: product.id, // Crucial: ensure Firestore ID is part of the currentProduct
                 name: product.name,
                 price: product.price,
                 image: modalProductImages.length > 0 ? modalProductImages[0] : 'https://placehold.co/600x400/cccccc/000000?text=No+Image'
@@ -341,15 +370,20 @@
          * @param {object} product - The product object { name, price, image }.
          * @param {number} [quantityToAdd=1] - The number of units to add (optional, defaults to 1).
          */
-        window.addToCart = function(product, quantityToAdd = 1) { // Made global
-            const existingItemIndex = cart.findIndex(item => item.name === product.name);
+        window.addToCart = function(product, quantityToAdd = 1) { // Made global. Product object now has {id, name, price, image} from Firestore.
+            // Ensure product.id is used for cart uniqueness if available, otherwise fallback to name (though ID is preferred)
+            const uniqueIdentifier = product.id || product.name;
+            const findCondition = item => (product.id ? item.id === product.id : item.name === product.name);
+
+            const existingItemIndex = cart.findIndex(findCondition);
 
             if (existingItemIndex > -1) {
                 // If item exists, increment quantity by quantityToAdd
                 cart[existingItemIndex].quantity += quantityToAdd;
             } else {
                 // If item does not exist, add new item with specified quantity
-                cart.push({ ...product, quantity: quantityToAdd, id: Date.now() }); // Add a unique ID for easier removal if needed
+                // The product object already contains the Firestore ID if sourced correctly from renderProducts
+                cart.push({ ...product, quantity: quantityToAdd });
             }
 
             saveCart(); // Save the updated cart to localStorage
@@ -371,21 +405,28 @@
          * @param {object} product - The product object { name, price, image }.
          * @param {HTMLElement} iconElement - The heart icon element that was clicked.
          */
-        window.toggleWishlist = function(product, iconElement) { // Made global
-            const existingItemIndex = wishlist.findIndex(item => item.name === product.name);
+        window.toggleWishlist = function(product, iconElement) { // Made global. Product object now has {id, name, price, image} from Firestore.
+            // Ensure product.id is used for wishlist uniqueness
+            const findCondition = item => (product.id ? item.id === product.id : item.name === product.name);
+            const existingItemIndex = wishlist.findIndex(findCondition);
 
             if (existingItemIndex > -1) {
                 // If item exists, remove it
                 wishlist.splice(existingItemIndex, 1);
                 showSuccessMessage(`"${product.name}" removed from wishlist!`);
-                iconElement.classList.remove('fa-solid'); // filled heart
-                iconElement.classList.add('far'); // empty heart
+                if (iconElement) { // iconElement might not always be passed
+                    iconElement.classList.remove('fa-solid'); // filled heart
+                    iconElement.classList.add('far'); // empty heart
+                }
             } else {
                 // If item does not exist, add it
-                wishlist.push({ ...product, id: Date.now() }); // Add a unique ID
+                // The product object already contains the Firestore ID
+                wishlist.push({ ...product });
                 showSuccessMessage(`"${product.name}" added to wishlist!`);
-                iconElement.classList.remove('far'); // empty heart
-                iconElement.classList.add('fa-solid'); // filled heart
+                if (iconElement) { // iconElement might not always be passed
+                    iconElement.classList.remove('far'); // empty heart
+                    iconElement.classList.add('fa-solid'); // filled heart
+                }
             }
 
             saveWishlist(); // Save the updated wishlist to localStorage
@@ -416,16 +457,17 @@
                     <div class="bg-white rounded-xl shadow-lg overflow-hidden relative transform hover:scale-105 transition duration-300 cursor-pointer"
                          onclick="showProductDetails('${product.id}')">
                         <i class="wishlist-icon fa-heart fa-lg absolute top-3 right-3 z-10"
-                           data-product-name="${product.name}"
-                           onclick="event.stopPropagation(); toggleWishlist({ name: '${product.name}', price: ${product.price}, image: '${firstImage}' }, this)"></i>
+                           data-product-id="${product.id}" <!-- Important: Add product ID -->
+                           data-product-name="${product.name}" <!-- Keep for display or fallback -->
+                           onclick="event.stopPropagation(); toggleWishlist({ id: '${product.id}', name: '${product.name}', price: ${product.price}, image: '${firstImage}' }, this)"></i>
                         <img src="${firstImage}" alt="${product.name} Image" class="w-full h-48 object-cover" onerror="this.onerror=null;this.src='https://placehold.co/400x300/cccccc/000000?text=Image+Error';">
                         <div class="p-6">
                             <h3 class="text-xl font-semibold text-gray-800 mb-2">${product.name}</h3>
-                            <p class="text-gray-600 text-sm mb-4">${product.description.substring(0, 70)}...</p>
+                            <p class="text-gray-600 text-sm mb-4">${product.description ? product.description.substring(0, 70) : ''}...</p>
                             <div class="flex justify-between items-center">
-                                <span class="text-2xl font-bold text-blue-600">KSh ${product.price.toLocaleString()}</span>
+                                <span class="text-2xl font-bold text-blue-600">KSh ${product.price ? product.price.toLocaleString() : 'N/A'}</span>
                                 <button class="bg-blue-600 text-white py-2 px-4 rounded-full hover:bg-blue-700 transition duration-300"
-                                        onclick="event.stopPropagation(); addToCart({ name: '${product.name}', price: ${product.price}, image: '${firstImage}' })">Add to Cart</button>
+                                        onclick="event.stopPropagation(); addToCart({ id: '${product.id}', name: '${product.name}', price: ${product.price}, image: '${firstImage}' })">Add to Cart</button>
                             </div>
                         </div>
                     </div>
@@ -437,19 +479,30 @@
         }
 
 
-        // Fetch products from localStorage
-        function fetchProducts() {
+        // Fetch products from Firestore
+        async function fetchProducts() {
             loadingProducts.style.display = 'block'; // Show loading indicator
+            productGrid.innerHTML = ''; // Clear existing products before loading
+
             try {
-                const storedProducts = JSON.parse(localStorage.getItem('products')) || [];
-                products = storedProducts; // Assign directly, no need for real-time listener from DB
-                renderProducts(products);
+                const snapshot = await db.collection('products').orderBy('createdAt', 'desc').get();
+
+                if (snapshot.empty) {
+                    productGrid.innerHTML = '<p class="col-span-full text-center text-gray-500">No products found at the moment. Check back soon!</p>';
+                    products = []; // Ensure products array is empty
+                } else {
+                    products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    renderProducts(products);
+                }
+
                 updateCartCount(); // Ensure counts are updated after products are loaded
                 updateWishlistCount();
             } catch (error) {
-                console.error("Error fetching products from localStorage: ", error);
+                console.error("Error fetching products from Firestore: ", error);
                 productGrid.innerHTML = '<p class="col-span-full text-center text-red-500">Error loading products. Please try again later.</p>';
-                loadingProducts.style.display = 'none';
+                products = []; // Ensure products array is empty on error
+            } finally {
+                loadingProducts.style.display = 'none'; // Hide loading indicator
             }
         }
 
